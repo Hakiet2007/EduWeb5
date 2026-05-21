@@ -1,0 +1,554 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: EduWeb - Platform for teachers to assign homework and students to submit
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: classes
+    description: Class management
+  - name: assignments
+    description: Assignment management
+  - name: submissions
+    description: Submission management
+  - name: dashboard
+    description: Dashboard stats
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /classes:
+    get:
+      operationId: listClasses
+      tags: [classes]
+      summary: List classes for current user
+      responses:
+        "200":
+          description: List of classes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Class"
+    post:
+      operationId: createClass
+      tags: [classes]
+      summary: Create a new class (teacher only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassInput"
+      responses:
+        "201":
+          description: Created class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+
+  /classes/join:
+    post:
+      operationId: joinClass
+      tags: [classes]
+      summary: Join a class with invite code (student)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinClassInput"
+      responses:
+        "200":
+          description: Joined class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+        "400":
+          description: Invalid code
+
+  /classes/{classId}:
+    get:
+      operationId: getClass
+      tags: [classes]
+      summary: Get a class by ID
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Class detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassDetail"
+        "404":
+          description: Not found
+
+  /assignments:
+    get:
+      operationId: listAssignments
+      tags: [assignments]
+      summary: List assignments for current user
+      responses:
+        "200":
+          description: List of assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assignment"
+    post:
+      operationId: createAssignment
+      tags: [assignments]
+      summary: Create an assignment (teacher only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignmentInput"
+      responses:
+        "201":
+          description: Created assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+
+  /assignments/{assignmentId}:
+    get:
+      operationId: getAssignment
+      tags: [assignments]
+      summary: Get an assignment by ID
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Assignment detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssignmentDetail"
+        "404":
+          description: Not found
+
+  /assignments/{assignmentId}/submissions:
+    get:
+      operationId: listSubmissions
+      tags: [submissions]
+      summary: List submissions for an assignment
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Submission"
+    post:
+      operationId: submitAssignment
+      tags: [submissions]
+      summary: Submit an assignment (student)
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmissionInput"
+      responses:
+        "201":
+          description: Submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+
+  /assignments/{assignmentId}/submissions/{submissionId}/grade:
+    patch:
+      operationId: gradeSubmission
+      tags: [submissions]
+      summary: Grade a submission (teacher only)
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: submissionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GradeInput"
+      responses:
+        "200":
+          description: Graded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Get dashboard statistics for current user
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    RegisterInput:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [teacher, student]
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    User:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [teacher, student]
+
+    AuthResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+
+    ClassInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+
+    Class:
+      type: object
+      required: [id, name, inviteCode, teacherId, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        inviteCode:
+          type: string
+        teacherId:
+          type: integer
+        teacherName:
+          type: string
+        studentCount:
+          type: integer
+        createdAt:
+          type: string
+
+    ClassDetail:
+      type: object
+      required: [id, name, inviteCode, teacherId, createdAt, students, assignments]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        inviteCode:
+          type: string
+        teacherId:
+          type: integer
+        teacherName:
+          type: string
+        createdAt:
+          type: string
+        students:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Assignment"
+
+    JoinClassInput:
+      type: object
+      required: [inviteCode]
+      properties:
+        inviteCode:
+          type: string
+
+    AssignmentInput:
+      type: object
+      required: [title, classId]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        classId:
+          type: integer
+        dueDate:
+          type: ["string", "null"]
+
+    Assignment:
+      type: object
+      required: [id, title, classId, className, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        classId:
+          type: integer
+        className:
+          type: string
+        dueDate:
+          type: ["string", "null"]
+        submissionCount:
+          type: integer
+        mySubmission:
+          $ref: "#/components/schemas/Submission"
+        createdAt:
+          type: string
+
+    AssignmentDetail:
+      type: object
+      required: [id, title, classId, className, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        classId:
+          type: integer
+        className:
+          type: string
+        dueDate:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        submissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Submission"
+
+    SubmissionInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+
+    Submission:
+      type: object
+      required: [id, assignmentId, studentId, content, createdAt]
+      properties:
+        id:
+          type: integer
+        assignmentId:
+          type: integer
+        studentId:
+          type: integer
+        studentName:
+          type: string
+        content:
+          type: string
+        grade:
+          type: ["string", "null"]
+        feedback:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    GradeInput:
+      type: object
+      required: [grade]
+      properties:
+        grade:
+          type: string
+        feedback:
+          type: string
+
+    DashboardStats:
+      type: object
+      required: [classCount, assignmentCount, submissionCount, pendingCount]
+      properties:
+        classCount:
+          type: integer
+        assignmentCount:
+          type: integer
+        submissionCount:
+          type: integer
+        pendingCount:
+          type: integer
